@@ -1,5 +1,3 @@
-#!/usr/local/opt/python/libexec/bin/python
-
 import nibabel as nb
 import numpy as np
 import sys
