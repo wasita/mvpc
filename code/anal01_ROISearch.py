@@ -8,8 +8,11 @@ sub = sys.argv[1]
 dpath = "../../preproc/sub-rid0000{}/".format(sub)
 opath = "../sub-rid0000{}/".format(sub)
 
-os.mkdir(opath)
-os.symlink("{}T1w_USAQ.nii.gz".format(dpath), "{}T1w_USAQ.nii.gz".format(opath)) 
+try:
+    os.mkdir(opath)
+    os.symlink("{}T1w_USAQ.nii.gz".format(dpath), "{}T1w_USAQ.nii.gz".format(opath)) 
+except:
+    pass # you can only do that once without causing trouble
 
 tasks = ["beh","tax"]
 data_fn = dpath+"Qtstats_{}_run-{}.nii.gz"
@@ -24,11 +27,9 @@ twenty_conds = ['{}_{}'.format(a,b) for a in animals for b in behaviors]
 results = {}
 
 masks = np.hstack((np.arange(1,181), np.arange(1001,1170)))
-masks = np.arange(1,20)
 
-
-for mask_val in masks:
-    print(mask_val)
+for i,mask_val in enumerate(masks):
+    print("Completed: [ {} / {} ]".format(mask_val, len(masks)), end="\r")
     ds = None
     for task in tasks:
         for r in range(1,6):
@@ -56,7 +57,8 @@ res_ds.samples = res_samp
 ni = res_ds.map_to_nifti()
 ni.to_filename(opath+"roi_search.nii.gz")
 
-
+print("All done. Go to {} and use Afni, MRICroGl, or whatever to view your "\
+        "results".format(opath))
 
   
 
