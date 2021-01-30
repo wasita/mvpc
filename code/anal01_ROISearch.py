@@ -27,6 +27,7 @@ twenty_conds = ['{}_{}'.format(a,b) for a in animals for b in behaviors]
 results = {}
 
 masks = np.hstack((np.arange(1,181), np.arange(1001,1170)))
+masks = np.arange(1,6)
 
 for i,mask_val in enumerate(masks):
     print("Completed: [ {} / {} ]".format(mask_val, len(masks)), end="\r")
