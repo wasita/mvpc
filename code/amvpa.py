@@ -85,7 +85,7 @@ class Dataset:
         ni = nb.Nifti1Image(nu_data,self.a['aff'])
         return ni
 
-        
+
 
         
 def cross_validated_classification(ds, clf): 
