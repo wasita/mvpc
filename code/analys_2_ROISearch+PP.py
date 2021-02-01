@@ -42,6 +42,9 @@ twenty_conds = ['{}_{}'.format(a,b) for a in animals for b in behaviors]
 # as in analysis 1 collect data in dict
 results = {}
 
+# Use this many processing cores
+nproc = 12
+
 # instead of using the ranges for mask ids, instead use the mask data to
 # determine mask ids
 # OLD: masks = np.hstack((np.arange(1,181), np.arange(1001,1170)))
@@ -67,24 +70,27 @@ masks = masks[1:] # chop off first element.
 # This function tasks two arguments: a dataset, ds, and an int, m. where m is
 # the id of the mask
 def compute_roi_searchlight(mask_val):
+    try:
+        ds = None
+        for task in tasks:
+            for r in range(1,6):
+                if ds is None:
+                    ds = Dataset(data_fn.format(task, r), mask=mask_fn,
+                            mask_val=mask_val)
+                else:
+                    ds.append(Dataset(data_fn.format(task,r), mask=mask_fn,
+                        mask_val=mask_val))
 
-    for task in tasks:
-        for r in range(1,6):
-            if ds is None:
-                ds = Dataset(data_fn.format(task, r), mask=mask_fn,
-                        mask_val=mask_val)
-            else:
-                ds.append(Dataset(data_fn.format(task,r), mask=mask_fn,
-                    mask_val=mask_val))
+        ds.set_sa('targets', np.tile(twenty_conds,10))
+        ds.set_sa('chunks', np.repeat(range(10),20))
+        ds.zscore_by_chunk()
 
-    ds.set_sa('targets', np.tile(twenty_conds,10))
-    ds.set_sa('chunks', np.repeat(range(10),20))
-    ds.zscore_by_chunk()
-
-    results[mask_val] = np.mean(cross_validated_classification(ds, svm.LinearSVC))
+        results[mask_val] = np.mean(cross_validated_classification(ds, svm.LinearSVC))
+    except:
+        pass
 
 # Now loop in parallel over the set mask ids
-Parallel(n_jobs=8, require='sharedmem')(delayed(compute_roi_search)(m) for m in
+Parallel(n_jobs=nproc, require='sharedmem')(delayed(compute_roi_searchlight)(m) for m in
         masks)
 
 print("00000____=_+_==--=====+++++...,,,,234723hwefdubc897g4efwev...")
@@ -97,7 +103,7 @@ for m in results:
 
 res_ds.samples = res_samp
 ni = res_ds.map_to_nifti()
-ni.to_filename(opath+"roi_search.nii.gz")
+ni.to_filename(opath+"reslt_2_ROISearch+PP.nii.gz")
 
 print("All done. Go to {} and use Afni, MRICroGl, or whatever to view your "\
         "results".format(opath))
