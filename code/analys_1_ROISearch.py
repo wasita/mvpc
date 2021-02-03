@@ -27,24 +27,25 @@ twenty_conds = ['{}_{}'.format(a,b) for a in animals for b in behaviors]
 results = {}
 
 masks = np.hstack((np.arange(1,181), np.arange(1001,1170)))
-masks = np.arange(1,6)
 
-for i,mask_val in enumerate(masks):
-    print("Completed: [ {} / {} ]".format(mask_val, len(masks)), end="\r")
-    ds = None
-    for task in tasks:
-        for r in range(1,6):
-            if ds is None:
-                ds = Dataset(data_fn.format(task, r), mask=mask_fn,
-                        mask_val=mask_val)
-            else:
-                ds.append(Dataset(data_fn.format(task,r), mask=mask_fn,
-                    mask_val=mask_val))
+for mask_val in masks:
+    try:
+        print("Completed: [ {} / {} ]".format(mask_val, len(masks)), end="\r")
+        ds = None
+        for task in tasks:
+            for r in range(1,6):
+                if ds is None:
+                    ds = Dataset(data_fn.format(task, r), mask=mask_fn,
+                            mask_val=mask_val)
+                else:
+                    ds.append(Dataset(data_fn.format(task,r), mask=mask_fn,
+                        mask_val=mask_val))
 
-    ds.set_sa('targets', np.tile(twenty_conds,10))
-    ds.set_sa('chunks', np.repeat(range(10),20))
-    ds.zscore_by_chunk()
-
+        ds.set_sa('targets', np.tile(twenty_conds,10))
+        ds.set_sa('chunks', np.repeat(range(10),20))
+        ds.zscore_by_chunk()
+    except:
+        pass
 
     results[mask_val] = np.mean(cross_validated_classification(ds, svm.LinearSVC))
 
