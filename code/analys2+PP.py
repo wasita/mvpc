@@ -1,3 +1,4 @@
+#!/opt/python/3.5-Anaconda/bin/python
 #################################################################################
 #
 #   Anaylsis 2. ROI Search plus Parallelism to speed things up
@@ -37,13 +38,15 @@ animals = ['bird','insect','primate','reptile','ungulate']
 behaviors = ['eating','fighting','running','swimming']
 twenty_conds = ['{}_{}'.format(a,b) for a in animals for b in behaviors]
 
+
+
 # END SETUP 
 
-# as in analysis 1 collect data in dict
-results = {}
+# collect data in a file
+results = opath+"anal2_roiSL.1D"
 
 # Use this many processing cores
-nproc = 12
+nproc = 40
 
 # instead of using the ranges for mask ids, instead use the mask data to
 # determine mask ids
@@ -69,7 +72,7 @@ masks = masks[1:] # chop off first element.
 # write the core of the former for-loop as a function
 # This function tasks two arguments: a dataset, ds, and an int, m. where m is
 # the id of the mask
-def compute_roi_searchlight(mask_val):
+def compute_roi_searchlight(i,mask_val):
     try:
         ds = None
         for task in tasks:
@@ -84,17 +87,26 @@ def compute_roi_searchlight(mask_val):
         ds.set_sa('targets', np.tile(twenty_conds,10))
         ds.set_sa('chunks', np.repeat(range(10),20))
         ds.zscore_by_chunk()
+        
+        j,k = ds.shape
 
-        results[mask_val] = np.mean(cross_validated_classification(ds, svm.LinearSVC))
+        #results[mask_val] = np.mean(cross_validated_classification(ds, svm.LinearSVC))
+        f = open(results, 'a+')
+        mu = np.mean(cross_validated_classification(ds, svm.LinearSVC))
+        f.write("{} {} {:.4f}\n".format(mask_val, k, mu))
+        f.close()
+        print('{} of {}; id: {} nvox: {} svm: {:.4f}'.format(i, len(masks),
+            mask_val, k, mu), end='\r')
+   
     except:
         pass
 
 # Now loop in parallel over the set mask ids
-Parallel(n_jobs=nproc, require='sharedmem')(delayed(compute_roi_searchlight)(m) for m in
-        masks)
+Parallel(n_jobs=nproc)(delayed(compute_roi_searchlight)(i,m) for i,m in
+        enumerate(masks))
 
 print("00000____=_+_==--=====+++++...,,,,234723hwefdubc897g4efwev...")
-
+sys.exit()
 
 res_ds = Dataset(mask_fn)
 res_samp = np.zeros(res_ds.shape)
