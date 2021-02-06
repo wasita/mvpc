@@ -17,6 +17,7 @@ from sklearn import svm
 import sys, os
 from joblib import Parallel, delayed
 import nibabel as nb
+import time
 
 sub = sys.argv[1]
 
@@ -44,6 +45,8 @@ twenty_conds = ['{}_{}'.format(a,b) for a in animals for b in behaviors]
 
 # collect data in a file
 results = opath+"anal2_roiSL.1D"
+f = open(results,'w')
+f.close() # this ensures a blank new file named $results
 
 # Use this many processing cores
 nproc = 40
@@ -72,7 +75,7 @@ masks = masks[1:] # chop off first element.
 # write the core of the former for-loop as a function
 # This function tasks two arguments: a dataset, ds, and an int, m. where m is
 # the id of the mask
-def compute_roi_searchlight(i,mask_val):
+def compute_roi_searchlight(i,mask_val,chance=.05):
     try:
         ds = None
         for task in tasks:
@@ -91,36 +94,26 @@ def compute_roi_searchlight(i,mask_val):
         j,k = ds.shape
 
         #results[mask_val] = np.mean(cross_validated_classification(ds, svm.LinearSVC))
-        f = open(results, 'a+')
         mu = np.mean(cross_validated_classification(ds, svm.LinearSVC))
-        f.write("{} {} {:.4f}\n".format(mask_val, k, mu))
-        f.close()
-        print('{} of {}; id: {} nvox: {} svm: {:.4f}'.format(i, len(masks),
-            mask_val, k, mu), end='\r')
-   
     except:
-        pass
+        mu = chance
+        k = 999
+        print("\n!! WARNING: mask {} did not compute".format(mask_val))
+    f = open(results, 'a+')
+    f.write("{m:04d} {nvox:03d} {acc:.4f}\n".format(m=mask_val, nvox=k, acc=mu))
+    f.close()
+    print('{} of {}; id: {} nvox: {} svm: {:.4f}'.format(i, len(masks),
+            mask_val, k, mu), end='\r')
+    
+
+        
 
 # Now loop in parallel over the set mask ids
 Parallel(n_jobs=nproc)(delayed(compute_roi_searchlight)(i,m) for i,m in
         enumerate(masks))
 
-print("00000____=_+_==--=====+++++...,,,,234723hwefdubc897g4efwev...")
-sys.exit()
-
-res_ds = Dataset(mask_fn)
-res_samp = np.zeros(res_ds.shape)
-for m in results:
-    res_samp[res_ds.samples==m] = results[m]
-
-res_ds.samples = res_samp
-ni = res_ds.map_to_nifti()
-ni.to_filename(opath+"reslt_2_ROISearch+PP.nii.gz")
-
-print("All done. Go to {} and use Afni, MRICroGl, or whatever to view your "\
-        "results".format(opath))
-
-  
-
+print("00000____=_+_==--=====+++++...,,,,...DONE")
+print("result store in {}".format(results))
+print("{}".format(time.time()))
 
 
