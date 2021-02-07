@@ -8,14 +8,15 @@ class Dataset:
         # Load nifti from file
         ni = nb.load(dat_fn)
 
-        # save affine translation matrix and grid size
+        # save affine translation matrix, grid size, header
         self.a = {'aff':ni.affine}
         self.a['grid'] = ni.shape[:3]
+        self.a['header'] = ni.header
 
         # Transform data to rectangle
         data = ni.get_fdata()
         data = data.squeeze()
-        i,j,k = self.a['grid'] 
+        i,j,k = self.a['grid'][:3] 
         data = data.reshape((i*j*k,-1))
 
         # get indices for features
@@ -79,10 +80,13 @@ class Dataset:
 
     def map_to_nifti(self):
         i,j,k = self.a['grid']
-        nu_data = np.zeros((i*j*k, self.shape[0]))
+        nsamp = self.samples.shape[0]
+        nu_data = np.zeros((i*j*k, nsamp))
         nu_data[self.fa['f_indx'],:] = self.samples.transpose()
-        nu_data = nu_data.reshape((i,j,k,-1))
-        ni = nb.Nifti1Image(nu_data,self.a['aff'])
+        self.a['header']['dim'][5] = self.samples.shape[0]
+
+        nu_data = nu_data.reshape((i,j,k,1,nsamp))
+        ni = nb.Nifti1Image(nu_data,self.a['aff'],header=self.a['header'])
         return ni
 
 
