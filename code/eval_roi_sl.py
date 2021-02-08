@@ -4,7 +4,7 @@ from amvpa import *
 
 # collect 1D data and and run t-test across subects for ROIs
 subs = [1, 12, 17, 24, 27, 31, 32, 33, 34, 36, 37, 41]
-sl_fn = "../sub-rid0000{n:02}/anal2_roiSL.1D"
+sl_fn = "../sub-rid0000{n:02}/roiSL.1D"
 dpath = "../../preproc/sub-rid000001/" # any subject just to get mask and T1_USAQ
 
 opath = "../group_results/"
@@ -41,7 +41,7 @@ T = stats.ttest_1samp(res, popmean=.05, axis=1)
 tstats = T.statistic.reshape((-1,1))
 summary_data = np.hstack((dat[:,0:2], res, tstats))
 
-np.savetxt("../anal2_summary",summary_data, fmt='%.4f')
+np.savetxt("../roiSL_summary",summary_data, fmt='%.4f')
 
 mask_ds = Dataset(mask_fn)
 res_ds = Dataset(ni_template)
@@ -63,5 +63,5 @@ for m in range(i):
 
 res_ds.samples = res_samp
 ni = res_ds.map_to_nifti()
-ni.to_filename(opath+"analy2_roisearch.nii.gz")
+ni.to_filename(opath+"roisearch.nii.gz")
 print("All done. Go to {} and use Afni, MRICroGl, or whatever to view your results".format(opath))
