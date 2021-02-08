@@ -8,7 +8,6 @@ subs = [1, 12, 17, 24, 27, 31, 32, 33, 34, 36, 37, 41]
 sl_fn = "../sub-rid0000{n:02}/roiSL.1D"
 dpath = "../../preproc/sub-rid000001/" # any subject just to get mask and T1_USAQ
 opath = "../group_results/"
-"""
 
 try:
     os.mkdir(opath)
@@ -38,13 +37,13 @@ for s in subs:
 
 T = stats.ttest_1samp(res, popmean=.05, axis=1)
 
-# make a new data matrix to hold results with ROI ids, number of voxels per ROI, individual searchlight
-# maps, and Tstats
+# make a new data matrix to hold results with ROI ids, number of voxels per ROI,
+# individual searchlight maps, and Tstats
 
 tstats = T.statistic.reshape((-1,1))
 summary_data = np.hstack((dat[:,0:2], res, tstats))
 
-np.savetxt("../roiSL_summary",summary_data, fmt='%.4f')
+np.savetxt("{}roiSL_summary".format(opath),summary_data, fmt='%.4f')
 
 mask_ds = Dataset(mask_fn)
 res_ds = Dataset(ni_template)
@@ -67,7 +66,7 @@ for m in range(i):
 res_ds.samples = res_samp
 ni = res_ds.map_to_nifti()
 ni.to_filename(opath+"roisearch.nii.gz")
-"""
+
 # These next few lines fix the AFNI extension information in the header of the
 # results file. Because we used the header from Qtstats_beh_rin-1.nii.gz, some
 # of the meta-data is wrong, such as the labels for sub-briks and the degrees of
