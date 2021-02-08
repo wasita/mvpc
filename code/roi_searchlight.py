@@ -44,12 +44,14 @@ twenty_conds = ['{}_{}'.format(a,b) for a in animals for b in behaviors]
 # END SETUP 
 
 # collect data in a file
-results = opath+"anal2_roiSL.1D"
+results = opath+"roiSL.1D"
 f = open(results,'w')
 f.close() # this ensures a blank new file named $results
 
 # Use this many processing cores
-nproc = 40
+# Increase this number for faster processing using more cores.
+# say 40 ?
+nproc = 12
 
 # instead of using the ranges for mask ids, instead use the mask data to
 # determine mask ids
