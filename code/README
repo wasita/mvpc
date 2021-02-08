@@ -1,0 +1,17 @@
+## Step 1
+
+    To run a single subject type:
+        python roi_searchlight.py 01
+
+        to run roi_searchlight.py for subject 01
+
+    Alternatively type:
+        
+        bash roi_SL_all.sh
+
+        to run all subjects.
+
+## Step 2: Aggregate all subjects and run a ttest on results
+
+    python eval_roi_sl.py
+

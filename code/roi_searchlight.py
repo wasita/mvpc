@@ -1,14 +1,6 @@
-#!/opt/python/3.5-Anaconda/bin/python
 #################################################################################
 #
-#   Anaylsis 2. ROI Search plus Parallelism to speed things up
-#
-#   This starts with the code from Analysis 1 and adds 'Parallel' and 'delayed' from
-#   the joblib Python library.
-#
-#   Goal: Instead of processing each mask one at a time in
-#   a for-loop, attempt to run as parallel threads using multiple cores in
-#   parallel.
+#   ROI Search using Parallel processing to speed things up
 #
 ##################################################################################
 from amvpa import *
@@ -43,7 +35,7 @@ twenty_conds = ['{}_{}'.format(a,b) for a in animals for b in behaviors]
 
 # END SETUP 
 
-# collect data in a file
+# initialize the file to store data
 results = opath+"roiSL.1D"
 f = open(results,'w')
 f.close() # this ensures a blank new file named $results
@@ -51,7 +43,7 @@ f.close() # this ensures a blank new file named $results
 # Use this many processing cores
 # Increase this number for faster processing using more cores.
 # say 40 ?
-nproc = 12
+nproc = 20
 
 # instead of using the ranges for mask ids, instead use the mask data to
 # determine mask ids
@@ -107,8 +99,6 @@ def compute_roi_searchlight(i,mask_val,chance=.05):
     print('{} of {}; id: {} nvox: {} svm: {:.4f}'.format(i, len(masks),
             mask_val, k, mu), end='\r')
     
-
-        
 
 # Now loop in parallel over the set mask ids
 Parallel(n_jobs=nproc)(delayed(compute_roi_searchlight)(i,m) for i,m in
