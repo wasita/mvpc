@@ -14,7 +14,8 @@ class Dataset:
             ni = nb.load(data_src)
         elif type(data_src) == nb.nifti1.Nifti1Image:
             ni = data_src
-        elif type(data_src) == np.ndarray:
+        elif (type(data_src) == np.ndarray or 
+                type(data_src) == np.core.memmap.memmap):
             self.samples = data_src
             self.a = {}
             from_nifti = False
@@ -110,9 +111,13 @@ class Dataset:
         ni = nb.Nifti1Image(nu_data,self.a['aff'],header=self.a['header'])
         return ni
 
+    def save_to_nifti(self, filename):
+        ni = self.map_to_nifti()
+        ni.to_filename(filename)
+
     def select_features(self, features):
         cols = np.arange(self.shape[1])
-        sel = [f in features for f in self.fa['f_indx']]
+        sel = np.array([f in features for f in self.fa['f_indx']])
         samples = self.samples[:,sel]
         nu_ds = Dataset(samples)
         nu_ds.a = self.a
@@ -139,40 +144,65 @@ class InputError(Exception):
         self.message = message
 
         
-def cross_validated_classification(ds, clf): 
-    results = [] 
-    for ch in np.unique(ds.chunks): 
-        X = ds.samples[ds.chunks != ch,:] 
-        y = ds.targets[ds.chunks != ch] 
-        test_samp = ds.samples[ds.chunks == ch, :] 
-        test_labels = ds.targets[ds.chunks == ch] 
-        model = clf(max_iter=2000) 
-        model.fit(X,y) 
-        pred = model.predict(test_samp) 
-        results.append(sum(pred==test_labels)/float(len(pred))) 
-    return np.mean(results)        
+def cross_validated_classification(ds, clf, return_mean=True):
+    try:
+        results = [] 
+        for ch in np.unique(ds.chunks): 
+            X = ds.samples[ds.chunks != ch,:] 
+            y = ds.targets[ds.chunks != ch] 
+            test_samp = ds.samples[ds.chunks == ch, :] 
+            test_labels = ds.targets[ds.chunks == ch] 
+            model = clf(max_iter=2000) 
+            model.fit(X,y) 
+            pred = model.predict(test_samp) 
+            results.append(sum(pred==test_labels)/float(len(pred))) 
+        if return_mean:
+            results = [np.mean(results)]
+        return results
+    except:
+        return "FAIL"
 
 def _run_searchlight(ds, idx, measure, meas_args=None, 
-            i=None, n=None):
+            i=None, n=None, return_on_fail="chance"):
     print("[{}\t\t]\t{} / {}".format(idx[0],i,n), end="\r")
-    sl_ds = ds.select_features(idx)
-    f = open("sl_results.txt",'a+')
-    f.write("{}\t{}\n".format(idx[0],measure(sl_ds, meas_args)))
-    f.close()
-    #return (idx, measure(sl_ds, meas_args))
+    m_value = measure(ds,meas_args)
+    ret_val = None
+    if m_value == "FAIL":
+        print("<!> WARNING <!> Searchlight {} FAIL!".format(idx[0]))
+        if return_on_fail == "chance":
+            chance = 1.0/len(np.unique(ds.targets))
+            ret_val = [chance]
+            print("\t>>> Imputing chance: {}".format(chance))
+        else:
+            r = return_on_fail
+            print("\t>>> Imputing provided return_on_fail value: {}".format(r))
+            ret_val = r
+    else:
+        ret_val = m_value
+        
+    ret_val = np.array(ret_val).reshape((len(ret_val),-1))
+    return ret_val
     
 
 def searchlight(ds, measure=None, meas_args=None, nproc=12):
 
-    measure = cross_validated_classification
-    meas_args = svm.LinearSVC 
-    #sl_result = 
-    Parallel(n_jobs=nproc)(
+    sl_result = Parallel(n_jobs=nproc)(
             delayed(_run_searchlight)(
-                ds, idx, measure, meas_args, 
+                ds.select_features(idx), idx, measure, meas_args, 
                 i=i, n=len(ds.sl_map))
             for i,idx in enumerate(ds.sl_map)) 
-    #return sl_result
+    
+    i = sl_result[0].shape[0]
+    j = len(sl_result)
+    samples = np.zeros((i,j))
+    for idx,r in enumerate(sl_result):
+        samples[:,idx] = r
+    
+    sl_ds = Dataset(samples)
+    sl_ds.a = ds.a
+    sl_ds.fa = ds.fa
+
+    return sl_ds
 
 def spherical_neighborhood(idx, grid, radius=1):
     """ 
