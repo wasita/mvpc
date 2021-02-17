@@ -115,10 +115,14 @@ class Dataset:
         ni = self.map_to_nifti()
         ni.to_filename(filename)
 
-    def select_features(self, features):
+    def select_features(self, features, elim_zero_var_feats=True):
         cols = np.arange(self.shape[1])
         sel = np.array([f in features for f in self.fa['f_indx']])
         samples = self.samples[:,sel]
+        if elim_zero_var_feats:
+            bool_array = np.diag(np.dot(samples.T,samples))>0
+            samples = samples[:,bool_array]
+            features = list(np.array(features)[bool_array])
         nu_ds = Dataset(samples)
         nu_ds.a = self.a
         nu_ds.sa = self.sa

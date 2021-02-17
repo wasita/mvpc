@@ -61,7 +61,7 @@ savefile = "{}Q1_svm_sl_20conds.nii".format(opath)
 
 res = searchlight(ds, measure=measure, meas_args=measure_args, nproc=40)
 res.save_to_nifti(savefile)
-
+"""
 ########## Now change the chunks and targets for Q2
 
 ds.targets = ds.sa['animals']
@@ -80,7 +80,7 @@ savefile = "{}Q3_svm_sl_4behaviors.nii".format(opath)
 res = searchlight(ds, measure=measure, meas_args=measure_args, nproc=40)
 res.save_to_nifti(savefile)
 
-
+"""
 
 
 
