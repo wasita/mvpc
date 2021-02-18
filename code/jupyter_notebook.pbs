@@ -1,0 +1,32 @@
+#!/bin/bash -l
+#PBS -q default
+#PBS -N Jupyter_notebook
+#PBS -l walltime=10:00:00
+#PBS -l nodes=1:ppn=8
+#PBS -l feature=bigmem # to request 8 Gb per core
+
+# change to directory from which job is submitted
+cd $PBS_O_WORKDIR
+
+# get tunneling info
+XDG_RUNTIME_DIR=""
+node=$(hostname -s)
+user=$(whoami)
+cluster="discovery7"
+
+# This next command chooses a random port number between 8000 and 8999
+port=`echo $(( 8000 + RANDOM % 1000 ))`
+
+
+# print tunneling instructions jupyter-log
+echo -e "
+# Command to create ssh tunnel:
+ssh -N -f -L ${port}:${node}:${port} ${user}@${cluster}.dartmouth.edu
+
+# Use a Browser on your local machine to go to:
+localhost:${port}
+"
+module load python
+jupyter-notebook --no-browser --port=${port} --ip=${node}
+# keep it up and running
+sleep 3600
